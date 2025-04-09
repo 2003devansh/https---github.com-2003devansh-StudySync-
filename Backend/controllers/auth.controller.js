@@ -1,7 +1,7 @@
 const User = require("../models/user.model") ;
 const bcrypt = require("bcrypt") ;
 
-exports.signup  = async (req,res)=>{
+exports.signup  = async (req,res,next)=>{
     try {
         const {firstname,lastname,email,password} = req.body ; 
         const existingUser =  await User.findOne({email});
@@ -29,29 +29,33 @@ exports.signup  = async (req,res)=>{
 }
 
 
-exports.login  = async (req,res)=>{
-   try {
-    const {email,password} = req.body ; 
-    const user = await User.findOne({email}).select("+password") ;
-    if(!user){
-        return res.status(400).json({message: "Invalid credentials"}) ;
-    }
-    const isMatch =  await bcrypt.compare(user,password) ;
-    if(!isMatch){
-        return res.status(400).json({message: "Invalid credentials"}) ;
-    }
-    const token = user.generateAuthToken() ;
-    res.status(200).json({
+exports.login = async (req, res, next) => {
+    try {
+      const { email, password } = req.body;
+      const user = await User.findOne({ email }).select("+password");
+  
+      if (!user) {
+        return res.status(400).json({ message: "Invalid credentials" });
+      }
+  
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Invalid credentials" });
+      }
+  
+      const token = user.generateAuthToken();
+  
+      res.status(200).json({
         message: "Login successful",
-        token, 
-        user:{
-            _id: user._id,
-            fullname: user.fullname,
-            email: user.email ,
-
-        }
-    })
-   } catch (error) {
-      next(error) ;
-   }
-}
+        token,
+        user: {
+          _id: user._id,
+          fullname: user.fullname,
+          email: user.email,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  
